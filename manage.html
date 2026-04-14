@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiyoung · 통합 관리 시스템</title>
+  <style>
+    :root {
+      --bg: #0d1117; --panel: #161b22; --panel-2: #1c2230;
+      --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+      --accent: #58a6ff; --accent-2: #3fb950; --danger: #f85149;
+      --warning: #d29922; --chip: #21262d;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
+    header h1 a { color: var(--text); text-decoration: none; }
+    header h1 a:hover { color: var(--accent); }
+    header .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mode-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.3px;
+    }
+    .mode-badge.readonly { background: #3a2a00; color: var(--warning); border: 1px solid #5a4400; }
+    .mode-badge.admin { background: #0d2e1a; color: var(--accent-2); border: 1px solid #1f4f30; }
+    .mode-badge.setup { background: #2a1a3a; color: #c678dd; border: 1px solid #4a2f5c; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, .btn {
+      background: var(--panel-2); color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 14px; border-radius: 6px;
+      font-size: 0.85rem; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    button:hover:not(:disabled), .btn:hover { border-color: var(--accent); color: var(--accent); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.primary:hover:not(:disabled) { background: #4493e6; color: #fff; }
+    button.danger { color: var(--danger); border-color: #3a2020; }
+    button.danger:hover:not(:disabled) { background: #3a2020; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 32px 64px; }
+    .banner {
+      background: var(--panel); border: 1px solid var(--border);
+      border-left: 3px solid var(--warning); border-radius: 6px;
+      padding: 12px 16px; margin-bottom: 20px;
+      font-size: 0.88rem; color: var(--muted);
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 24px;
+    }
+    .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .stat .label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat .value { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+    .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    input[type="text"], input[type="search"], input[type="password"], textarea, select {
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px 12px; font-size: 0.9rem; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    .search-box { flex: 1; min-width: 220px; }
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip {
+      background: var(--chip); border: 1px solid var(--border);
+      border-radius: 999px; padding: 4px 12px;
+      font-size: 0.78rem; cursor: pointer;
+      color: var(--muted); transition: all 0.15s;
+    }
+    .chip:hover { color: var(--text); }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .item {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .item:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .item .title { font-weight: 600; font-size: 1rem; }
+    .item .content { color: var(--muted); font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
+    .item .meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--muted); margin-top: auto; }
+    .item .category { background: var(--chip); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 0.72rem; color: var(--accent); }
+    .item .actions { display: flex; gap: 6px; }
+    .item .actions button { padding: 4px 10px; font-size: 0.75rem; }
+    .empty, .loading {
+      grid-column: 1 / -1; text-align: center;
+      padding: 60px 20px; color: var(--muted);
+      border: 1px dashed var(--border); border-radius: 8px;
+    }
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
+      display: none; align-items: center; justify-content: center;
+      z-index: 100; padding: 20px;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px;
+      width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; }
+    .form-group textarea { min-height: 90px; resize: vertical; }
+    .form-hint { font-size: 0.75rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .blob-output {
+      background: #000; color: var(--accent-2);
+      padding: 12px; border-radius: 6px;
+      font-family: 'Courier New', monospace; font-size: 0.75rem;
+      word-break: break-all; margin-top: 10px;
+      max-height: 180px; overflow-y: auto;
+      border: 1px solid var(--accent-2);
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--panel-2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px 18px;
+      font-size: 0.88rem; transition: transform 0.25s;
+      z-index: 200; max-width: 90vw;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--accent-2); color: var(--accent-2); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+    @media (max-width: 600px) { header, main { padding-left: 16px; padding-right: 16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="index.html">← Kiyoung</a> · 통합 관리 시스템</h1>
+      <div class="sub">
+        <span>데이터: <code>data.json</code> (GitHub 저장소)</span>
+        <span id="modeBadge" class="mode-badge readonly">🔒 조회 전용</span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button id="btnAdd" onclick="openModal()" disabled>＋ 새 항목</button>
+      <button onclick="refresh()">🔄 새로고침</button>
+      <button onclick="exportJSON()">📤 내보내기</button>
+      <button id="btnAdmin" onclick="openAdminModal()">🔑 Admin</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="banner" class="banner" style="display:none"></div>
+    <div class="stats">
+      <div class="stat"><div class="label">전체 항목</div><div class="value" id="statTotal">0</div></div>
+      <div class="stat"><div class="label">카테고리</div><div class="value" id="statCategories">0</div></div>
+      <div class="stat"><div class="label">오늘 추가</div><div class="value" id="statToday">0</div></div>
+      <div class="stat"><div class="label">마지막 동기화</div><div class="value" id="statSync" style="font-size:0.9rem;">—</div></div>
+    </div>
+    <div class="controls">
+      <input type="search" class="search-box" id="search" placeholder="🔍 제목/내용 검색..." oninput="render()" />
+      <div class="filter-chips" id="filterChips"></div>
+    </div>
+    <div class="items" id="items">
+      <div class="loading"><span class="spinner"></span> 데이터 로딩 중...</div>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <h2 id="modalTitle">새 항목 추가</h2>
+      <div class="form-group"><label>제목 *</label><input type="text" id="inputTitle" placeholder="제목을 입력하세요" /></div>
+      <div class="form-group"><label>카테고리</label><input type="text" id="inputCategory" placeholder="예: 업무, 개인, 학습" list="categoryList" /><datalist id="categoryList"></datalist></div>
+      <div class="form-group"><label>내용</label><textarea id="inputContent" placeholder="내용을 입력하세요"></textarea></div>
+      <div class="modal-actions">
+        <button onclick="closeModal()">취소</button>
+        <button class="primary" id="btnSave" onclick="saveItem()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="adminModal">
+    <div class="modal">
+      <h2 id="adminTitle">🔑 관리자 모드</h2>
+      <div id="adminBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ====================================================================
+    // ⚠️ 암호화된 토큰 — 셋업 완료 후 아래 문자열 교체
+    // 비밀번호(Admin@7068)를 알아야 복호화됨
+    // ====================================================================
+    const ENCRYPTED_TOKEN = 'hab5f5PNND7eTxBfuLRVJCbEFBrh8lCktXPUdE4VlbBhwBNXRDx2pMRYAbYUtZt2ReO+fFP2I6HszBzcufpv0pri+E6gn/ZNny35GypbOKKIodC2qpx8Wlw4+RXhZQJts/0FdFLwkkBGYN5PHDcAB2dB2PdPk3fWYqzglQiLOSFy4xyXg7Iv6Iw=';
+
+    const REPO_OWNER = 'kyhwang0';
+    const REPO_NAME = 'kyhwang0.github.io';
+    const BRANCH = 'master';
+    const DATA_PATH = 'data.json';
+    const SESSION_KEY = 'kyhwang0_session_token';
+    const LOCAL_BLOB_KEY = 'kyhwang0_blob_fallback'; // 셋업 후 임시 테스트용
+
+    let items = [];
+    let fileSha = null;
+    let editingId = null;
+    let currentFilter = 'ALL';
+    let isLoading = false;
+
+    function getBlob() {
+      return ENCRYPTED_TOKEN || localStorage.getItem(LOCAL_BLOB_KEY) || '';
+    }
+    function hasBlob() { return !!getBlob(); }
+    function getToken() { return sessionStorage.getItem(SESSION_KEY); }
+    function setToken(t) {
+      if (t) sessionStorage.setItem(SESSION_KEY, t);
+      else sessionStorage.removeItem(SESSION_KEY);
+      updateModeUI();
+    }
+    function isAdmin() { return !!getToken(); }
+
+    // ====================================================================
+    // Web Crypto (PBKDF2 + AES-GCM)
+    // ====================================================================
+    async function deriveKey(password, salt) {
+      const km = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
+      );
+      return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+        km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+      );
+    }
+    async function encryptToken(token, password) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(password, salt);
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(token));
+      const combined = new Uint8Array(salt.length + iv.length + ct.byteLength);
+      combined.set(salt, 0);
+      combined.set(iv, salt.length);
+      combined.set(new Uint8Array(ct), salt.length + iv.length);
+      return bytesToB64(combined);
+    }
+    async function decryptToken(blob, password) {
+      const c = b64ToBytes(blob);
+      const salt = c.slice(0, 16), iv = c.slice(16, 28), ct = c.slice(28);
+      const key = await deriveKey(password, salt);
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+      return new TextDecoder().decode(pt);
+    }
+    function bytesToB64(b) { let s = ''; b.forEach(x => s += String.fromCharCode(x)); return btoa(s); }
+    function b64ToBytes(b64) {
+      const bin = atob(b64.replace(/\s/g, ''));
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    // ====================================================================
+    // GitHub API
+    // ====================================================================
+    const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_PATH}`;
+    const RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${DATA_PATH}`;
+
+    async function ghFetch() {
+      if (isAdmin()) {
+        const res = await fetch(`${API_URL}?ref=${BRANCH}`, {
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Accept': 'application/vnd.github+json',
+          },
+          cache: 'no-store',
+        });
+        if (res.status === 404) { fileSha = null; return []; }
+        if (res.status === 401) throw new Error('토큰이 유효하지 않습니다');
+        if (!res.ok) throw new Error(`GitHub API 오류 ${res.status}`);
+        const j = await res.json();
+        fileSha = j.sha;
+        return JSON.parse(fromB64Utf8(j.content));
+      }
+      const res = await fetch(`${RAW_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.status === 404) return [];
+      if (!res.ok) throw new Error(`데이터 로딩 실패 (${res.status})`);
+      return await res.json();
+    }
+
+    async function ghWrite(next, msg) {
+      if (!isAdmin()) throw new Error('관리자 모드가 아닙니다');
+      const body = {
+        message: msg || 'data: update',
+        content: toB64Utf8(JSON.stringify(next, null, 2)),
+        branch: BRANCH,
+      };
+      if (fileSha) body.sha = fileSha;
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      if (res.status === 409 || res.status === 422) throw new Error('CONFLICT');
+      if (res.status === 401) throw new Error('토큰이 유효하지 않습니다');
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(`저장 실패: ${e.message || res.status}`);
+      }
+      const j = await res.json();
+      fileSha = j.content.sha;
+    }
+
+    async function validateToken(token) {
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' },
+      });
+      if (!res.ok) return false;
+      const r = await res.json();
+      return r.permissions && (r.permissions.push || r.permissions.admin);
+    }
+
+    // ====================================================================
+    // CRUD
+    // ====================================================================
+    async function syncRetry(msg, mutate) {
+      let tries = 0;
+      while (tries < 2) {
+        const snap = JSON.parse(JSON.stringify(items));
+        mutate(items);
+        try { await ghWrite(items, msg); return; }
+        catch (e) {
+          if (e.message === 'CONFLICT' && tries === 0) {
+            items = snap;
+            toast('다른 곳 수정됨, 재동기화 중...', 'error');
+            items = await ghFetch();
+            render();
+            tries++;
+            continue;
+          }
+          items = snap;
+          render();
+          throw e;
+        }
+      }
+    }
+
+    async function refresh() {
+      try {
+        isLoading = true;
+        document.getElementById('btnAdd').disabled = true;
+        items = await ghFetch();
+        updateSyncTime();
+        render();
+      } catch (e) {
+        toast(e.message, 'error');
+      } finally {
+        isLoading = false;
+        document.getElementById('btnAdd').disabled = !isAdmin();
+      }
+    }
+
+    function openModal(id) {
+      if (!isAdmin()) return toast('관리자 모드 필요', 'error');
+      editingId = id || null;
+      document.getElementById('modalTitle').textContent = id ? '항목 수정' : '새 항목 추가';
+      if (id) {
+        const it = items.find(x => x.id === id);
+        document.getElementById('inputTitle').value = it.title;
+        document.getElementById('inputCategory').value = it.category || '';
+        document.getElementById('inputContent').value = it.content || '';
+      } else {
+        document.getElementById('inputTitle').value = '';
+        document.getElementById('inputCategory').value = '';
+        document.getElementById('inputContent').value = '';
+      }
+      refreshDatalist();
+      document.getElementById('modal').classList.add('show');
+      document.getElementById('inputTitle').focus();
+    }
+    function closeModal() { document.getElementById('modal').classList.remove('show'); editingId = null; }
+
+    async function saveItem() {
+      const title = document.getElementById('inputTitle').value.trim();
+      const category = document.getElementById('inputCategory').value.trim() || '일반';
+      const content = document.getElementById('inputContent').value.trim();
+      if (!title) return toast('제목을 입력해주세요', 'error');
+      const btn = document.getElementById('btnSave');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 저장 중...';
+      try {
+        const now = Date.now();
+        if (editingId) {
+          const id = editingId;
+          await syncRetry(`data: update ${id}`, list => {
+            const it = list.find(x => x.id === id);
+            if (!it) throw new Error('항목 없음');
+            it.title = title; it.category = category; it.content = content; it.updatedAt = now;
+          });
+          toast('수정되었습니다', 'success');
+        } else {
+          await syncRetry('data: create', list => {
+            list.unshift({ id: uid(), title, category, content, createdAt: now, updatedAt: now });
+          });
+          toast('추가되었습니다', 'success');
+        }
+        updateSyncTime();
+        closeModal();
+        render();
+      } catch (e) { toast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = '저장'; }
+    }
+
+    async function deleteItem(id) {
+      if (!isAdmin()) return toast('관리자 모드 필요', 'error');
+      const it = items.find(x => x.id === id);
+      if (!it) return;
+      if (!confirm(`"${it.title}" 삭제할까요?`)) return;
+      try {
+        await syncRetry(`data: delete ${id}`, list => {
+          const i = list.findIndex(x => x.id === id);
+          if (i >= 0) list.splice(i, 1);
+        });
+        updateSyncTime();
+        render();
+        toast('삭제되었습니다', 'success');
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    function exportJSON() {
+      const data = JSON.stringify(items, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kyhwang0-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast(`${items.length}개 내보냄`, 'success');
+    }
+
+    // ====================================================================
+    // Admin 모달 (3가지 모드)
+    // ====================================================================
+    function openAdminModal() {
+      const title = document.getElementById('adminTitle');
+      const body = document.getElementById('adminBody');
+      if (isAdmin()) {
+        title.textContent = '🔓 관리자 모드 (활성)';
+        body.innerHTML = `
+          <p class="form-hint" style="margin-bottom:14px">
+            이 탭이 열려있는 동안 관리자 모드가 유지됩니다.<br>
+            탭을 닫거나 로그아웃 시 다시 비밀번호 입력 필요.
+          </p>
+          <div class="modal-actions">
+            <button onclick="closeAdminModal()">닫기</button>
+            <button class="danger" onclick="logout()">로그아웃</button>
+          </div>
+        `;
+      } else if (!hasBlob()) {
+        title.textContent = '🔧 초기 셋업 (1회)';
+        body.innerHTML = `
+          <p class="form-hint" style="margin-bottom:14px; color:var(--warning)">
+            ⚠️ 아직 암호화된 토큰이 없습니다.<br>
+            아래에 GitHub PAT + 비밀번호 입력하면 암호화된 문자열이 나옵니다.<br>
+            그 문자열을 개발자에게 전달하면 코드에 내장됩니다.
+          </p>
+          <div class="form-group">
+            <label>GitHub Personal Access Token</label>
+            <input type="password" id="setupToken" placeholder="github_pat_..." autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="text" id="setupPassword" value="Admin@7068" />
+            <div class="form-hint">이미 결정된 값: <b>Admin@7068</b></div>
+          </div>
+          <div class="modal-actions">
+            <button onclick="closeAdminModal()">취소</button>
+            <button class="primary" id="btnEncrypt" onclick="runSetup()">🔒 암호화 실행</button>
+          </div>
+          <div id="setupResult"></div>
+        `;
+        setTimeout(() => document.getElementById('setupToken').focus(), 50);
+      } else {
+        title.textContent = '🔑 비밀번호 입력';
+        body.innerHTML = `
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" id="inputPassword" placeholder="비밀번호" autocomplete="current-password" />
+            <div class="form-hint">내장된 토큰을 복호화합니다.</div>
+          </div>
+          <div class="modal-actions">
+            <button onclick="closeAdminModal()">취소</button>
+            <button class="primary" id="btnLogin" onclick="login()">로그인</button>
+          </div>
+        `;
+        setTimeout(() => document.getElementById('inputPassword').focus(), 50);
+      }
+      document.getElementById('adminModal').classList.add('show');
+    }
+    function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
+
+    async function runSetup() {
+      const token = document.getElementById('setupToken').value.trim();
+      const password = document.getElementById('setupPassword').value;
+      if (!token) return toast('토큰을 입력하세요', 'error');
+      if (!password) return toast('비밀번호를 입력하세요', 'error');
+      const btn = document.getElementById('btnEncrypt');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 처리 중...';
+      try {
+        toast('토큰 검증 중...', '');
+        const ok = await validateToken(token);
+        if (!ok) throw new Error('토큰이 유효하지 않거나 쓰기 권한이 없습니다');
+        const blob = await encryptToken(token, password);
+        localStorage.setItem(LOCAL_BLOB_KEY, blob); // 이 기기에서 즉시 테스트 가능
+        document.getElementById('setupResult').innerHTML = `
+          <div style="margin-top: 16px; padding-top:16px; border-top:1px solid var(--border);">
+            <label style="font-size:0.85rem; color:var(--accent-2); font-weight:600;">✅ 암호화 완료!</label>
+            <p class="form-hint" style="margin:8px 0;">아래 문자열을 복사해서 개발자에게 전달하세요. 이게 <code>manage.html</code> 코드에 내장됩니다:</p>
+            <div class="blob-output" id="blobOutput">${blob}</div>
+            <button class="primary" style="margin-top:10px;" onclick="copyBlob()">📋 클립보드 복사</button>
+            <p class="form-hint" style="margin-top:14px; color:var(--accent-2);">
+              💡 이 브라우저에는 이미 암호화 문자열이 저장되어 <b>바로 테스트 가능</b>합니다.<br>
+              모달을 닫고 🔑 Admin → 비밀번호 입력해보세요.
+            </p>
+          </div>
+        `;
+        toast('암호화 성공', 'success');
+      } catch (e) { toast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = '🔒 암호화 실행'; }
+    }
+
+    function copyBlob() {
+      const blob = document.getElementById('blobOutput').textContent;
+      navigator.clipboard.writeText(blob).then(() => toast('복사되었습니다', 'success'));
+    }
+
+    async function login() {
+      const password = document.getElementById('inputPassword').value;
+      if (!password) return toast('비밀번호 입력', 'error');
+      const btn = document.getElementById('btnLogin');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 복호화...';
+      try {
+        const token = await decryptToken(getBlob(), password);
+        const ok = await validateToken(token);
+        if (!ok) throw new Error('토큰이 만료됐거나 유효하지 않습니다');
+        setToken(token);
+        closeAdminModal();
+        toast('관리자 모드 진입', 'success');
+        await refresh();
+      } catch (e) {
+        toast(e.name === 'OperationError' ? '비밀번호가 틀렸습니다' : (e.message || '복호화 실패'), 'error');
+      } finally { btn.disabled = false; btn.textContent = '로그인'; }
+    }
+
+    function logout() {
+      setToken(null);
+      fileSha = null;
+      closeAdminModal();
+      toast('로그아웃', 'success');
+      refresh();
+    }
+
+    // ====================================================================
+    // 렌더링
+    // ====================================================================
+    function updateModeUI() {
+      const badge = document.getElementById('modeBadge');
+      const btnAdd = document.getElementById('btnAdd');
+      const banner = document.getElementById('banner');
+      if (isAdmin()) {
+        badge.textContent = '🔓 관리자 모드';
+        badge.className = 'mode-badge admin';
+        btnAdd.disabled = isLoading;
+        banner.style.display = 'none';
+      } else if (!hasBlob()) {
+        badge.textContent = '🔧 셋업 필요';
+        badge.className = 'mode-badge setup';
+        btnAdd.disabled = true;
+        banner.style.display = 'flex';
+        banner.innerHTML = `<span>⚠️ 초기 셋업이 필요합니다. 우측 상단 <b>🔑 Admin</b> 을 클릭하세요.</span>`;
+      } else {
+        badge.textContent = '🔒 조회 전용';
+        badge.className = 'mode-badge readonly';
+        btnAdd.disabled = true;
+        banner.style.display = 'flex';
+        banner.innerHTML = `<span>조회 전용 모드입니다. 편집하려면 <b>🔑 Admin</b> → 비밀번호 입력.</span>`;
+      }
+    }
+
+    function updateSyncTime() {
+      const d = new Date();
+      const p = n => String(n).padStart(2, '0');
+      document.getElementById('statSync').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }
+
+    function getCategories() { return [...new Set(items.map(x => x.category).filter(Boolean))].sort(); }
+
+    function refreshDatalist() {
+      document.getElementById('categoryList').innerHTML =
+        getCategories().map(c => `<option value="${escapeHtml(c)}">`).join('');
+    }
+
+    function renderFilters() {
+      const chips = ['ALL', ...getCategories()];
+      document.getElementById('filterChips').innerHTML = chips.map(c => {
+        const label = c === 'ALL' ? '전체' : c;
+        const count = c === 'ALL' ? items.length : items.filter(x => x.category === c).length;
+        return `<div class="chip ${currentFilter === c ? 'active' : ''}" onclick="setFilter('${escapeAttr(c)}')">${escapeHtml(label)} · ${count}</div>`;
+      }).join('');
+    }
+
+    function setFilter(c) { currentFilter = c; render(); }
+
+    function renderStats() {
+      document.getElementById('statTotal').textContent = items.length;
+      document.getElementById('statCategories').textContent = getCategories().length;
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      document.getElementById('statToday').textContent =
+        items.filter(x => x.createdAt >= todayStart.getTime()).length;
+    }
+
+    function render() {
+      renderStats();
+      renderFilters();
+      const q = document.getElementById('search').value.toLowerCase().trim();
+      let list = items;
+      if (currentFilter !== 'ALL') list = list.filter(x => x.category === currentFilter);
+      if (q) list = list.filter(x =>
+        (x.title || '').toLowerCase().includes(q) ||
+        (x.content || '').toLowerCase().includes(q)
+      );
+      const el = document.getElementById('items');
+      if (list.length === 0) {
+        el.innerHTML = `<div class="empty">${
+          items.length === 0
+            ? (isAdmin()
+                ? '아직 항목이 없습니다.<br>우측 상단 <b>＋ 새 항목</b> 버튼으로 추가해보세요.'
+                : '아직 항목이 없습니다.')
+            : '검색 결과가 없습니다.'
+        }</div>`;
+        return;
+      }
+      el.innerHTML = list.map(it => `
+        <div class="item">
+          <div class="title">${escapeHtml(it.title)}</div>
+          ${it.content ? `<div class="content">${escapeHtml(it.content)}</div>` : ''}
+          <div class="meta">
+            <span class="category">${escapeHtml(it.category || '일반')}</span>
+            <span>${formatDate(it.updatedAt)}</span>
+          </div>
+          ${isAdmin() ? `
+            <div class="actions">
+              <button onclick="openModal('${it.id}')">수정</button>
+              <button class="danger" onclick="deleteItem('${it.id}')">삭제</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    // ====================================================================
+    // 유틸
+    // ====================================================================
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+    function toB64Utf8(s) {
+      const b = new TextEncoder().encode(s);
+      let bin = ''; b.forEach(x => bin += String.fromCharCode(x));
+      return btoa(bin);
+    }
+    function fromB64Utf8(b64) {
+      const bin = atob(b64.replace(/\s/g, ''));
+      const b = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(b);
+    }
+    function escapeHtml(s) {
+      return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function escapeAttr(s) { return (s || '').replace(/'/g, "\\'"); }
+    function formatDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts), p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    function toast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + type;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = 'toast', 2800);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeModal(); closeAdminModal(); }
+      if (e.key === 'Enter' && document.getElementById('adminModal').classList.contains('show')) {
+        const p = document.getElementById('inputPassword');
+        if (p && document.activeElement === p) login();
+      }
+    });
+    ['modal','adminModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', e => {
+        if (e.target.id === id) e.target.classList.remove('show');
+      });
+    });
+
+    updateModeUI();
+    refresh();
+  </script>
+</body>
+</html>
